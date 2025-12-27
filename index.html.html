@@ -1,0 +1,363 @@
+
+<!DOCTYPE html>
+<html lang="fr-FR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Pour Louise Vijverman 💌</title>
+  <style>
+    :root{
+      --bg: #fff5f7;
+      --primary: #e63950;
+      --secondary: #ff9fb3;
+      --text: #3b3b3b;
+      --card: #ffffff;
+      --shadow: 0 10px 25px rgba(0,0,0,0.08);
+    }
+
+    @keyframes float-hearts {
+      0%   { transform: translateY(0) scale(0.9); opacity: 0.9; }
+      100% { transform: translateY(-120px) scale(1.2); opacity: 0; }
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Inter", system-ui, -apple-system, Arial, sans-serif;
+      background: radial-gradient(1200px 600px at 20% 20%, #ffe6ec 0%, var(--bg) 60%);
+      color: var(--text);
+    }
+
+    header {
+      text-align: center;
+      padding: 40px 20px 20px;
+    }
+
+    .title {
+      font-size: 2rem;
+      color: var(--primary);
+      margin: 0 0 10px;
+    }
+    .subtitle {
+      font-size: 1rem;
+      color: #666;
+      margin: 4px 0;
+    }
+
+    .actions {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      margin: 14px 0 6px;
+      flex-wrap: wrap;
+    }
+    button {
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 12px 16px;
+      border-radius: 12px;
+      cursor: pointer;
+      box-shadow: var(--shadow);
+      transition: transform .15s ease, filter .15s ease;
+      font-weight: 600;
+    }
+    button.secondary { background: var(--secondary); }
+    button:hover { transform: translateY(-1px); filter: brightness(1.05); }
+    button:active { transform: translateY(0); filter: brightness(0.97); }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      padding: 24px;
+      max-width: 1100px;
+      margin: 0 auto 60px;
+    }
+    @media (max-width: 900px) {
+      .grid { grid-template-columns: repeat(3, 1fr); }
+    }
+    @media (max-width: 640px) {
+      .grid { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    .card {
+      perspective: 1000px;
+    }
+
+    .inner {
+      position: relative;
+      width: 100%;
+      padding-top: 100%; /* carré */
+      transform-style: preserve-3d;
+      transition: transform 0.7s cubic-bezier(.2,.7,.2,1);
+      border-radius: 16px;
+      box-shadow: var(--shadow);
+    }
+
+    .face {
+      position: absolute;
+      inset: 0;
+      backface-visibility: hidden;
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+
+    .front {
+      background: linear-gradient(135deg, #fff, #ffe0e7);
+      border: 2px dashed #ffb3c1;
+    }
+    .front .emoji {
+      font-size: 2rem;
+      color: var(--primary);
+      user-select: none;
+    }
+
+    .back {
+      background: var(--card);
+      transform: rotateY(180deg);
+      border: 2px solid #ffd1db;
+      text-align: center;
+    }
+
+    .message {
+      font-size: 1rem;
+      line-height: 1.35;
+      color: #444;
+    }
+
+    .opened .inner {
+      transform: rotateY(180deg);
+    }
+
+    /* Confettis */
+    .confetti {
+      position: fixed;
+      left: 0; top: 0; width: 100%; height: 100%;
+      pointer-events: none;
+      overflow: hidden;
+    }
+    .piece {
+      position: absolute;
+      width: 10px; height: 10px;
+      border-radius: 2px;
+      opacity: .9;
+      animation: float-hearts 1.8s ease-out forwards;
+    }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      left: 50%;
+      bottom: 24px;
+      transform: translateX(-50%);
+      background: #333;
+      color: #fff;
+      padding: 12px 16px;
+      border-radius: 10px;
+      box-shadow: var(--shadow);
+      font-size: 0.95rem;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .25s ease, transform .25s ease;
+    }
+    .toast.show {
+      opacity: 1;
+      pointer-events: auto;
+      transform: translateX(-50%) translateY(-4px);
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1 class="title">Petites boîtes de douceur pour Louise Vijverman 💝</h1>
+    <p class="subtitle">Ouvre une boîte par jour et découvre un message spécial.</p>
+    <p id="countdown" class="subtitle">Prochaine boîte dans 24:00:00</p>
+    <div class="actions">
+      <button id="reset" class="secondary">Réinitialiser</button>
+      <!-- <button id="toggleMusic" class="secondary">🎵 Musique</button> -->
+    </div>
+  </header>
+
+  <main class="grid" id="grid"></main>
+
+  <div class="confetti" id="confetti"></div>
+  <div class="toast" id="toast">Tu pourras ouvrir une autre boîte demain ❤️</div>
+
+  <!-- musique.mp3</audio> -->
+
+  <script>
+    // 🌟 Messages (français)
+    const MESSAGES = [
+      "Tu illumines mes journées ✨",
+      "Merci pour chaque moment à tes côtés 💖",
+      "Ton sourire est mon endroit préféré 😊",
+      "Tu mérites tout l'amour du monde 🌎❤️",
+      "Je crois en nous, toujours 🤝",
+      "Mon cœur te choisit chaque jour 💘",
+      "Merci d'exister ✨",
+      "Tu es ma plus belle surprise 🎁",
+      "Je compte les heures pour te voir ⏳💫",
+      "Je t'admire dans chaque détail 🌷",
+      "Avec toi, tout a du sens 🧩",
+      "Tu me donnes envie d'être meilleur·e 🌟"
+    ];
+    const EMOJIS = ["🎁","💌","💖","🌸","✨","💫","🌟","💕","🌹","😊","💝","🎀"];
+
+    const grid = document.getElementById('grid');
+    const toastEl = document.getElementById('toast');
+    const countdownEl = document.getElementById('countdown');
+
+    // ===== Limite: 1 boîte toutes les 24h (fenêtre móvel) =====
+    const STORAGE_KEY = "dailyBox24h";
+    // Limpeza do formato antigo, se existir (migração simples)
+    localStorage.removeItem("dailyBox");
+
+    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "null");
+    let lastOpenTs = saved && typeof saved.ts === 'number' ? saved.ts : null;
+    let openedIndexWindow = saved && typeof saved.index === 'number' ? saved.index : null;
+
+    const DAY_MS = 24 * 60 * 60 * 1000;
+
+    function canOpenNew() {
+      if (!lastOpenTs) return true;
+      return (Date.now() - lastOpenTs) >= DAY_MS;
+    }
+
+    function remainingMs() {
+      if (!lastOpenTs) return 0;
+      const diff = DAY_MS - (Date.now() - lastOpenTs);
+      return Math.max(0, diff);
+    }
+
+    function pad(n){ return String(n).padStart(2, '0'); }
+    function formatTime(ms){
+      const totalSec = Math.floor(ms / 1000);
+      const h = Math.floor(totalSec / 3600);
+      const m = Math.floor((totalSec % 3600) / 60);
+      const s = totalSec % 60;
+      return `${pad(h)}:${pad(m)}:${pad(s)}`;
+    }
+
+    function updateCountdownText() {
+      if (canOpenNew()) {
+        countdownEl.textContent = "Tu peux ouvrir une nouvelle boîte maintenant 🎉";
+      } else {
+        countdownEl.textContent = "Prochaine boîte dans " + formatTime(remainingMs());
+      }
+    }
+
+    // Atualiza contador a cada segundo e notifica quando virar
+    let wasLocked = !canOpenNew();
+    updateCountdownText();
+    setInterval(() => {
+      const lockedNow = !canOpenNew();
+      if (wasLocked && !lockedNow) {
+        showToast("C'est l'heure ! Tu peux ouvrir une nouvelle boîte 🎉");
+      }
+      wasLocked = lockedNow;
+      updateCountdownText();
+    }, 1000);
+
+    // Cria as cartas
+    MESSAGES.forEach((msg, i) => {
+      const card = document.createElement('div');
+      card.className = 'card';
+      card.innerHTML = `
+        <div class="inner">
+          <div class="face front">
+            <div class="emoji">${EMOJIS[i % EMOJIS.length]}</div>
+          </div>
+          <div class="face back">
+            <div class="message">${msg}</div>
+          </div>
+        </div>
+      `;
+
+      // Se a janela de 24h está ativa e esta foi a caixa aberta nessa janela, mostra aberta
+      if (!canOpenNew() && openedIndexWindow === i) {
+        card.classList.add('opened');
+      }
+
+      card.addEventListener('click', () => {
+        if (canOpenNew()) {
+          // Nova abertura permitida
+          // (Opcional) fechar todas para dar destaque à nova
+          document.querySelectorAll('.card').forEach(c => c.classList.remove('opened'));
+          card.classList.add('opened');
+
+          openedIndexWindow = i;
+          lastOpenTs = Date.now();
+          localStorage.setItem(STORAGE_KEY, JSON.stringify({ ts: lastOpenTs, index: i }));
+          launchConfetti(card);
+          updateCountdownText();
+        } else if (openedIndexWindow === i) {
+          // Pode reabrir/fechar a mesma da janela atual
+          card.classList.toggle('opened');
+        } else {
+          // Bloqueado: mostra tempo restante
+          showToast("Tu pourras ouvrir une autre boîte dans " + formatTime(remainingMs()) + " ❤️");
+        }
+      });
+
+      grid.appendChild(card);
+    });
+
+    // Botão Réinitialiser: fecha visualmente (não zera o timer)
+    document.getElementById('reset').addEventListener('click', () => {
+      document.querySelectorAll('.card').forEach(c => c.classList.remove('opened'));
+      if (!canOpenNew() && typeof openedIndexWindow === 'number') {
+        // (Opcional) reabrir automaticamente a caixa da janela atual
+        // document.querySelectorAll('.card')[openedIndexWindow].classList.add('opened');
+      }
+    });
+
+    // Música (opcional)
+    const audio = document.getElementById('audio');
+    const toggleMusicBtn = document.getElementById('toggleMusic');
+    if (toggleMusicBtn && audio) {
+      let playing = false;
+      toggleMusicBtn.addEventListener('click', () => {
+        if (!playing) { audio.play(); toggleMusicBtn.textContent = "⏸️ Pause"; }
+        else { audio.pause(); toggleMusicBtn.textContent = "🎵 Musique"; }
+        playing = !playing;
+      });
+    }
+
+    // Confettis simples
+    function launchConfetti(target, amount = 12) {
+      const container = document.getElementById('confetti');
+      const rect = (target instanceof Element)
+        ? target.getBoundingClientRect()
+        : {left: window.innerWidth/2, top: window.innerHeight/2, width: 0, height: 0};
+      for (let i = 0; i < amount; i++) {
+        const piece = document.createElement('div');
+        piece.className = 'piece';
+        const size = 8 + Math.random() * 10;
+        piece.style.width = size + 'px';
+        piece.style.height = size + 'px';
+        piece.style.left = (rect.left + rect.width/2 + (Math.random()-0.5)*120) + 'px';
+        piece.style.top = (rect.top + rect.height/2 + 20) + 'px';
+        piece.style.background = randomPastel();
+        piece.style.borderRadius = '50%';
+        piece.style.transform = `translateY(0) rotate(${Math.random()*360}deg)`;
+        container.appendChild(piece);
+        piece.addEventListener('animationend', () => piece.remove());
+      }
+    }
+    function randomPastel(){
+      const colors = ['#ff8fab','#ffb3c1','#ffd6dd','#ffe5ec','#ffc2d1','#ff758f','#faa2c1'];
+      return colors[Math.floor(Math.random()*colors.length)];
+    }
+
+    function showToast(text){
+      toastEl.textContent = text;
+      toastEl.classList.add('show');
+      setTimeout(() => toastEl.classList.remove('show'), 2000);
+    }
+  </script>
+</body>
+</html>
